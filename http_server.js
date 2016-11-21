@@ -15,6 +15,7 @@ var req = {
 
 function handleRequest(request, response) {
 
+    console.log(request.url);
     var url = request.url;
     var tid = url.split("/")[1];
     var profid = url.split("/")[2];
@@ -25,23 +26,43 @@ function handleRequest(request, response) {
         password: '',
         database: 'MonApplication'
     });
+
+
     connection.connect(function (err) {
-
         if (err) throw err;
-        connection.query(
-            {
-                sql: req[tid],
-                values: [profid]
-            },
-            function (err, rows) {
-                if (err) throw err;
 
-                response.end(JSON.stringify(rows));
-                connection.end();
-            });
-
+        handleConnection(response, connection, tid, profid);
     });
 }
+
+
+function handleConnection(response, connection, tid, profid) {
+
+    connection.query(
+        {
+            sql: req[tid],
+            values: [profid]
+        },
+        function (err, rows) {
+            try {
+                encodeAndSend(err, rows, response, connection)
+            } catch (err) {
+                console.log(err);
+                response.statusCode = 500;
+                response.statusMessage = "Server Error!";
+                response.end();
+            }
+        }
+    )
+}
+
+function encodeAndSend(err, rows, response, connection) {
+    if (err) throw err;
+
+    response.end(JSON.stringify(rows));
+    connection.end();
+}
+
 
 var server = http.createServer(handleRequest);
 
